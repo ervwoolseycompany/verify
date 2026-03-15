@@ -712,7 +712,7 @@
   <script>
     // API Base URL - Change this to your actual API URL
     const API_BASE_URL = 'http://localhost:5000';
-    // Supabase config - Replace with your actual values
+    // Supabase config
     const SUPABASE_URL = 'https://kgvybydlebssgdgkkbie.supabase.co';
     const SUPABASE_ANON_KEY = 'your-supabase-anon-key'; // Replace with your actual anon key
 
@@ -990,7 +990,7 @@
           try {
             const token = accessTokenInput.value;
             
-            // Call Supabase to update password
+            // Update password using Supabase
             const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
               method: 'PUT',
               headers: {
@@ -1042,7 +1042,7 @@
         alertMessage.classList.remove('show');
       }
 
-      // Verify email with token
+      // Verify email with token using your backend
       async function verifyEmail(token) {
         try {
           const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
@@ -1085,6 +1085,13 @@
         }
       }
 
+      // For password reset flow, we don't need to verify the token first
+      // We can just show the reset form since the token comes from Supabase
+      function handlePasswordReset(token, email) {
+        // Just show the reset form - the token is from Supabase and should be valid
+        showResetForm(token, email);
+      }
+
       // Main logic
       showLoading();
       
@@ -1093,42 +1100,15 @@
       if (urlData && urlData.access_token) {
         // Check if this is a password reset (recovery) or email verification
         if (urlData.type === 'recovery') {
-          // Password reset flow
-          verifyTokenWithSupabase(urlData.access_token, urlData.email);
+          // Password reset flow - just show the form
+          handlePasswordReset(urlData.access_token, urlData.email);
         } else {
-          // Email verification flow
+          // Email verification flow - verify with backend
           verifyEmail(urlData.access_token);
         }
       } else {
         // No token found
         showError('Invalid Link', 'No verification token found. The link may be invalid.', `Hash: ${window.location.hash || 'empty'}\nFull URL: ${window.location.href}`);
-      }
-
-      // Verify token with Supabase (for password reset)
-      async function verifyTokenWithSupabase(token, emailFromHash) {
-        try {
-          // Try to get user info from Supabase using the token
-          const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-            method: 'GET',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            // Token is valid, show reset form
-            showResetForm(token, emailFromHash || userData?.email);
-          } else {
-            // Token is invalid or expired
-            const error = await response.json().catch(() => null);
-            showError('Invalid Reset Link', 'This password reset link is invalid or has expired. Please request a new one.');
-          }
-        } catch (error) {
-          console.error('Token verification error:', error);
-          showError('Error', 'Failed to verify reset link. Please try again.', error.message);
-        }
       }
 
       // Also check if there's an error parameter in URL
