@@ -709,12 +709,9 @@
     </div>
   </div>
 
-  <script>
+<script>
     // API Base URL - Change this to your actual API URL
     const API_BASE_URL = 'http://localhost:5000';
-    // Supabase config
-    const SUPABASE_URL = 'https://kgvybydlebssgdgkkbie.supabase.co';
-    const SUPABASE_ANON_KEY = 'your-supabase-anon-key'; // Replace with your actual anon key
 
     document.addEventListener('DOMContentLoaded', function() {
       // DOM elements
@@ -969,7 +966,7 @@
         });
       }
 
-      // Form submission
+      // Form submission - UPDATED to use backend API
       if (resetForm) {
         resetForm.addEventListener('submit', async function(e) {
           e.preventDefault();
@@ -990,22 +987,23 @@
           try {
             const token = accessTokenInput.value;
             
-            // Update password using Supabase
-            const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-              method: 'PUT',
+            // Use your backend API instead of direct Supabase call
+            const response = await fetch(`${API_BASE_URL}/api/auth/update-password`, {
+              method: 'POST',
               headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                password: newPassword.value
+                access_token: token,
+                new_password: newPassword.value,
+                email: emailInput.value
               })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.msg || 'Failed to reset password');
+              throw new Error(data.message || 'Failed to reset password');
             }
 
             // Success - show success state
