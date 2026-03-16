@@ -709,415 +709,428 @@
     </div>
   </div>
 
-<script>
-    // API Base URL - Change this to your actual API URL
-    const API_BASE_URL = 'http://localhost:5000';
+<script type="module">
+  // Import Supabase directly in frontend (this is safe)
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/index.js'
+  
+  // Supabase direct frontend config - REPLACE WITH YOUR ACTUAL VALUES
+  const SUPABASE_URL = 'https://kgvybydlebssgdgkkbie.supabase.co'; // Your Supabase URL
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtndnlieWRsZWJzc2dkZ2trYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzAwMzQsImV4cCI6MjA4ODY0NjAzNH0.mrptZAC5lzXZ17qx3oczWfNNi7Z2V-GRTrgm-s8ph3A'; // Your anon key from Supabase dashboard
+  
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  // API Base URL for your backend (only used for email verification)
+  const API_BASE_URL = 'http://localhost:5000';
 
-    document.addEventListener('DOMContentLoaded', function() {
-      // DOM elements
-      const loadingState = document.getElementById('loadingState');
-      const emailVerificationStates = document.getElementById('emailVerificationStates');
-      const passwordResetStates = document.getElementById('passwordResetStates');
-      const errorState = document.getElementById('errorState');
-      const pageTitle = document.getElementById('pageTitle');
+  document.addEventListener('DOMContentLoaded', async function() {
+    // DOM elements
+    const loadingState = document.getElementById('loadingState');
+    const emailVerificationStates = document.getElementById('emailVerificationStates');
+    const passwordResetStates = document.getElementById('passwordResetStates');
+    const errorState = document.getElementById('errorState');
+    const pageTitle = document.getElementById('pageTitle');
+    
+    // Email verification elements
+    const emailSuccessState = document.getElementById('emailSuccessState');
+    const verifiedEmail = document.getElementById('verifiedEmail');
+    const emailProgressFill = document.getElementById('emailProgressFill');
+    const emailCountdownSpan = document.getElementById('emailCountdown');
+    
+    // Password reset elements
+    const resetFormState = document.getElementById('resetFormState');
+    const resetSuccessState = document.getElementById('resetSuccessState');
+    const resetForm = document.getElementById('resetPasswordForm');
+    const resetBtn = document.getElementById('resetBtn');
+    const alertMessage = document.getElementById('alertMessage');
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const toggleNewPassword = document.getElementById('toggleNewPassword');
+    const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+    const resetProgressFill = document.getElementById('resetProgressFill');
+    const resetCountdownSpan = document.getElementById('resetCountdown');
+    
+    // Error elements
+    const errorTitle = document.getElementById('errorTitle');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorDetails = document.getElementById('errorDetails');
+    const errorDetailsText = document.getElementById('errorDetailsText');
+
+    // Password validation elements
+    const lengthCheck = document.getElementById('lengthCheck');
+    const uppercaseCheck = document.getElementById('uppercaseCheck');
+    const lowercaseCheck = document.getElementById('lowercaseCheck');
+    const numberCheck = document.getElementById('numberCheck');
+    const matchCheck = document.getElementById('matchCheck');
+    const strengthText = document.getElementById('strengthText');
+    const bar1 = document.getElementById('bar1');
+    const bar2 = document.getElementById('bar2');
+    const bar3 = document.getElementById('bar3');
+    const bar4 = document.getElementById('bar4');
+
+    // Create hidden email field if it doesn't exist
+    if (!document.getElementById('email')) {
+      const emailInput = document.createElement('input');
+      emailInput.type = 'hidden';
+      emailInput.id = 'email';
+      emailInput.name = 'email';
+      resetForm.appendChild(emailInput);
+    }
+
+    // Hide all states
+    function hideAllStates() {
+      loadingState.style.display = 'none';
+      emailVerificationStates.style.display = 'none';
+      passwordResetStates.style.display = 'none';
+      errorState.style.display = 'none';
       
-      // Email verification elements
-      const emailSuccessState = document.getElementById('emailSuccessState');
-      const verifiedEmail = document.getElementById('verifiedEmail');
-      const emailProgressFill = document.getElementById('emailProgressFill');
-      const emailCountdownSpan = document.getElementById('emailCountdown');
+      emailSuccessState.style.display = 'none';
+      resetFormState.style.display = 'none';
+      resetSuccessState.style.display = 'none';
+    }
+
+    // Show loading
+    function showLoading() {
+      hideAllStates();
+      loadingState.style.display = 'block';
+    }
+
+    // Show email success
+    function showEmailSuccess(email) {
+      hideAllStates();
+      emailVerificationStates.style.display = 'block';
+      emailSuccessState.style.display = 'block';
+      pageTitle.textContent = 'Email Verification';
       
-      // Password reset elements
-      const resetFormState = document.getElementById('resetFormState');
-      const resetSuccessState = document.getElementById('resetSuccessState');
-      const resetForm = document.getElementById('resetPasswordForm');
-      const resetBtn = document.getElementById('resetBtn');
-      const alertMessage = document.getElementById('alertMessage');
-      const accessTokenInput = document.getElementById('accessToken');
-      const emailInput = document.getElementById('email');
-      const newPassword = document.getElementById('newPassword');
-      const confirmPassword = document.getElementById('confirmPassword');
-      const toggleNewPassword = document.getElementById('toggleNewPassword');
-      const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-      const resetProgressFill = document.getElementById('resetProgressFill');
-      const resetCountdownSpan = document.getElementById('resetCountdown');
+      verifiedEmail.textContent = email || 'Email verified successfully';
       
-      // Error elements
-      const errorTitle = document.getElementById('errorTitle');
-      const errorMessage = document.getElementById('errorMessage');
-      const errorDetails = document.getElementById('errorDetails');
-      const errorDetailsText = document.getElementById('errorDetailsText');
-
-      // Password validation elements
-      const lengthCheck = document.getElementById('lengthCheck');
-      const uppercaseCheck = document.getElementById('uppercaseCheck');
-      const lowercaseCheck = document.getElementById('lowercaseCheck');
-      const numberCheck = document.getElementById('numberCheck');
-      const matchCheck = document.getElementById('matchCheck');
-      const strengthText = document.getElementById('strengthText');
-      const bar1 = document.getElementById('bar1');
-      const bar2 = document.getElementById('bar2');
-      const bar3 = document.getElementById('bar3');
-      const bar4 = document.getElementById('bar4');
-
-      // Extract token and type from URL hash fragment
-      function getDataFromHash() {
-        const hash = window.location.hash.substring(1); // Remove the #
-        if (!hash) return null;
-        
-        const params = new URLSearchParams(hash);
-        return {
-          access_token: params.get('access_token'),
-          type: params.get('type'),
-          email: params.get('email'),
-          expires_at: params.get('expires_at'),
-          expires_in: params.get('expires_in'),
-          refresh_token: params.get('refresh_token'),
-          token_type: params.get('token_type')
-        };
-      }
-
-      // Hide all states
-      function hideAllStates() {
-        loadingState.style.display = 'none';
-        emailVerificationStates.style.display = 'none';
-        passwordResetStates.style.display = 'none';
-        errorState.style.display = 'none';
-        
-        emailSuccessState.style.display = 'none';
-        resetFormState.style.display = 'none';
-        resetSuccessState.style.display = 'none';
-      }
-
-      // Show loading
-      function showLoading() {
-        hideAllStates();
-        loadingState.style.display = 'block';
-      }
-
-      // Show email success
-      function showEmailSuccess(email) {
-        hideAllStates();
-        emailVerificationStates.style.display = 'block';
-        emailSuccessState.style.display = 'block';
-        pageTitle.textContent = 'Email Verification';
-        
-        verifiedEmail.textContent = email || 'Email verified successfully';
-        
-        // Start countdown and progress bar
-        let countdown = 5;
+      // Start countdown and progress bar
+      let countdown = 5;
+      emailCountdownSpan.textContent = countdown;
+      emailProgressFill.style.width = '0%';
+      
+      const countdownInterval = setInterval(() => {
+        countdown--;
         emailCountdownSpan.textContent = countdown;
-        emailProgressFill.style.width = '0%';
+        emailProgressFill.style.width = `${((5 - countdown) / 5) * 100}%`;
         
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          emailCountdownSpan.textContent = countdown;
-          emailProgressFill.style.width = `${((5 - countdown) / 5) * 100}%`;
-          
-          if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            window.location.href = 'login.html';
-          }
-        }, 1000);
-        
-        // Auto redirect after 5 seconds
-        setTimeout(() => {
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
           window.location.href = 'login.html';
-        }, 5000);
-      }
-
-      // Show password reset form
-      function showResetForm(token, userEmail) {
-        hideAllStates();
-        passwordResetStates.style.display = 'block';
-        resetFormState.style.display = 'block';
-        pageTitle.textContent = 'Reset Password';
-        
-        accessTokenInput.value = token;
-        if (userEmail) {
-          emailInput.value = decodeURIComponent(userEmail);
         }
-      }
+      }, 1000);
+      
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 5000);
+    }
 
-      // Show password reset success
-      function showResetSuccess() {
-        hideAllStates();
-        passwordResetStates.style.display = 'block';
-        resetSuccessState.style.display = 'block';
-        pageTitle.textContent = 'Password Reset';
-        
-        // Start countdown and progress bar
-        let countdown = 5;
+    // Show password reset form
+    function showResetForm(userEmail) {
+      hideAllStates();
+      passwordResetStates.style.display = 'block';
+      resetFormState.style.display = 'block';
+      pageTitle.textContent = 'Reset Password';
+      
+      if (userEmail) {
+        document.getElementById('email').value = decodeURIComponent(userEmail);
+      }
+    }
+
+    // Show password reset success
+    function showResetSuccess() {
+      hideAllStates();
+      passwordResetStates.style.display = 'block';
+      resetSuccessState.style.display = 'block';
+      pageTitle.textContent = 'Password Reset';
+      
+      // Start countdown and progress bar
+      let countdown = 5;
+      resetCountdownSpan.textContent = countdown;
+      resetProgressFill.style.width = '0%';
+      
+      const countdownInterval = setInterval(() => {
+        countdown--;
         resetCountdownSpan.textContent = countdown;
-        resetProgressFill.style.width = '0%';
+        resetProgressFill.style.width = `${((5 - countdown) / 5) * 100}%`;
         
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          resetCountdownSpan.textContent = countdown;
-          resetProgressFill.style.width = `${((5 - countdown) / 5) * 100}%`;
-          
-          if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            window.location.href = 'login.html';
-          }
-        }, 1000);
-        
-        // Auto redirect after 5 seconds
-        setTimeout(() => {
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
           window.location.href = 'login.html';
-        }, 5000);
-      }
-
-      // Show error
-      function showError(title, message, details = null) {
-        hideAllStates();
-        errorState.style.display = 'block';
-        
-        errorTitle.textContent = title;
-        errorMessage.textContent = message;
-        
-        // Show technical details in development
-        if (details && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-          errorDetails.style.display = 'block';
-          errorDetailsText.textContent = details;
         }
+      }, 1000);
+      
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 5000);
+    }
+
+    // Show error
+    function showError(title, message, details = null) {
+      hideAllStates();
+      errorState.style.display = 'block';
+      
+      errorTitle.textContent = title;
+      errorMessage.textContent = message;
+      
+      if (details && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        errorDetails.style.display = 'block';
+        errorDetailsText.textContent = details;
       }
+    }
 
-      // Password strength validation
-      function validatePassword(password) {
-        const checks = {
-          length: password.length >= 8,
-          uppercase: /[A-Z]/.test(password),
-          lowercase: /[a-z]/.test(password),
-          number: /[0-9]/.test(password)
-        };
+    // Password strength validation
+    function validatePassword(password) {
+      const checks = {
+        length: password.length >= 8,
+        uppercase: /[A-Z]/.test(password),
+        lowercase: /[a-z]/.test(password),
+        number: /[0-9]/.test(password)
+      };
 
-        // Update check icons
-        lengthCheck.className = `validation-item ${checks.length ? 'valid' : 'invalid'}`;
-        lengthCheck.innerHTML = `<i class="fas ${checks.length ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least 8 characters</span>`;
-        
-        uppercaseCheck.className = `validation-item ${checks.uppercase ? 'valid' : 'invalid'}`;
-        uppercaseCheck.innerHTML = `<i class="fas ${checks.uppercase ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one uppercase letter</span>`;
-        
-        lowercaseCheck.className = `validation-item ${checks.lowercase ? 'valid' : 'invalid'}`;
-        lowercaseCheck.innerHTML = `<i class="fas ${checks.lowercase ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one lowercase letter</span>`;
-        
-        numberCheck.className = `validation-item ${checks.number ? 'valid' : 'invalid'}`;
-        numberCheck.innerHTML = `<i class="fas ${checks.number ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one number</span>`;
+      lengthCheck.className = `validation-item ${checks.length ? 'valid' : 'invalid'}`;
+      lengthCheck.innerHTML = `<i class="fas ${checks.length ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least 8 characters</span>`;
+      
+      uppercaseCheck.className = `validation-item ${checks.uppercase ? 'valid' : 'invalid'}`;
+      uppercaseCheck.innerHTML = `<i class="fas ${checks.uppercase ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one uppercase letter</span>`;
+      
+      lowercaseCheck.className = `validation-item ${checks.lowercase ? 'valid' : 'invalid'}`;
+      lowercaseCheck.innerHTML = `<i class="fas ${checks.lowercase ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one lowercase letter</span>`;
+      
+      numberCheck.className = `validation-item ${checks.number ? 'valid' : 'invalid'}`;
+      numberCheck.innerHTML = `<i class="fas ${checks.number ? 'fa-check-circle' : 'fa-circle'}"></i><span>At least one number</span>`;
 
-        // Calculate strength
-        const validCount = Object.values(checks).filter(Boolean).length;
-        
-        // Update strength bars
-        [bar1, bar2, bar3, bar4].forEach((bar, index) => {
-          if (index < validCount) {
-            bar.classList.add('active');
-          } else {
-            bar.classList.remove('active');
-          }
-        });
-
-        // Update strength text
-        const strengthLevels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-        strengthText.textContent = strengthLevels[validCount];
-        strengthText.style.color = validCount <= 1 ? '#EF4444' : validCount <= 2 ? '#F59E0B' : '#10B981';
-
-        return checks;
-      }
-
-      // Check if passwords match
-      function checkPasswordMatch() {
-        const match = newPassword.value && confirmPassword.value && newPassword.value === confirmPassword.value;
-        matchCheck.className = `validation-item ${match ? 'valid' : 'invalid'}`;
-        matchCheck.innerHTML = `<i class="fas ${match ? 'fa-check-circle' : 'fa-circle'}"></i><span>Passwords match</span>`;
-        return match;
-      }
-
-      // Password input event listeners
-      if (newPassword) {
-        newPassword.addEventListener('input', () => {
-          validatePassword(newPassword.value);
-          if (confirmPassword.value) checkPasswordMatch();
-        });
-      }
-
-      if (confirmPassword) {
-        confirmPassword.addEventListener('input', checkPasswordMatch);
-      }
-
-      // Toggle password visibility
-      if (toggleNewPassword) {
-        toggleNewPassword.addEventListener('click', function() {
-          const type = newPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-          newPassword.setAttribute('type', type);
-          const icon = this.querySelector('i');
-          icon.classList.toggle('fa-eye');
-          icon.classList.toggle('fa-eye-slash');
-        });
-      }
-
-      if (toggleConfirmPassword) {
-        toggleConfirmPassword.addEventListener('click', function() {
-          const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
-          confirmPassword.setAttribute('type', type);
-          const icon = this.querySelector('i');
-          icon.classList.toggle('fa-eye');
-          icon.classList.toggle('fa-eye-slash');
-        });
-      }
-
-      // Form submission - UPDATED to use backend API
-      if (resetForm) {
-        resetForm.addEventListener('submit', async function(e) {
-          e.preventDefault();
-
-          // Validate password
-          const checks = validatePassword(newPassword.value);
-          const match = checkPasswordMatch();
-
-          if (!Object.values(checks).every(Boolean) || !match) {
-            showAlert('Please meet all password requirements', 'error');
-            return;
-          }
-
-          // Show loading state
-          setLoading(true);
-          hideAlert();
-
-          try {
-            const token = accessTokenInput.value;
-            
-            // Use your backend API instead of direct Supabase call
-            const response = await fetch(`${API_BASE_URL}/api/auth/update-password`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                access_token: token,
-                new_password: newPassword.value,
-                email: emailInput.value
-              })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-              throw new Error(data.message || 'Failed to reset password');
-            }
-
-            // Success - show success state
-            showResetSuccess();
-
-          } catch (error) {
-            console.error('Password reset error:', error);
-            showAlert(error.message, 'error');
-            setLoading(false);
-          }
-        });
-      }
-
-      function setLoading(isLoading) {
-        const btnText = resetBtn.querySelector('.btn-text');
-        const spinner = resetBtn.querySelector('.spinner');
-        
-        resetBtn.disabled = isLoading;
-        if (isLoading) {
-          btnText.style.display = 'none';
-          spinner.style.display = 'inline-block';
+      const validCount = Object.values(checks).filter(Boolean).length;
+      
+      [bar1, bar2, bar3, bar4].forEach((bar, index) => {
+        if (index < validCount) {
+          bar.classList.add('active');
         } else {
-          btnText.style.display = 'inline';
-          spinner.style.display = 'none';
+          bar.classList.remove('active');
         }
-      }
+      });
 
-      function showAlert(message, type) {
-        alertMessage.textContent = message;
-        alertMessage.className = `alert alert-${type} show`;
-      }
+      const strengthLevels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+      strengthText.textContent = strengthLevels[validCount];
+      strengthText.style.color = validCount <= 1 ? '#EF4444' : validCount <= 2 ? '#F59E0B' : '#10B981';
 
-      function hideAlert() {
-        alertMessage.classList.remove('show');
-      }
+      return checks;
+    }
 
-      // Verify email with token using your backend
-      async function verifyEmail(token) {
+    // Check if passwords match
+    function checkPasswordMatch() {
+      const match = newPassword.value && confirmPassword.value && newPassword.value === confirmPassword.value;
+      matchCheck.className = `validation-item ${match ? 'valid' : 'invalid'}`;
+      matchCheck.innerHTML = `<i class="fas ${match ? 'fa-check-circle' : 'fa-circle'}"></i><span>Passwords match</span>`;
+      return match;
+    }
+
+    // Password input event listeners
+    if (newPassword) {
+      newPassword.addEventListener('input', () => {
+        validatePassword(newPassword.value);
+        if (confirmPassword.value) checkPasswordMatch();
+      });
+    }
+
+    if (confirmPassword) {
+      confirmPassword.addEventListener('input', checkPasswordMatch);
+    }
+
+    // Toggle password visibility
+    if (toggleNewPassword) {
+      toggleNewPassword.addEventListener('click', function() {
+        const type = newPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        newPassword.setAttribute('type', type);
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+      });
+    }
+
+    if (toggleConfirmPassword) {
+      toggleConfirmPassword.addEventListener('click', function() {
+        const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPassword.setAttribute('type', type);
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+      });
+    }
+
+    // Form submission - DIRECT Supabase update
+    if (resetForm) {
+      resetForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Validate password
+        const checks = validatePassword(newPassword.value);
+        const match = checkPasswordMatch();
+
+        if (!Object.values(checks).every(Boolean) || !match) {
+          showAlert('Please meet all password requirements', 'error');
+          return;
+        }
+
+        // Show loading state
+        setLoading(true);
+        hideAlert();
+
         try {
-          const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json'
-            }
+          // DIRECT SUPABASE UPDATE - This works because we set the session earlier
+          const { error } = await supabase.auth.updateUser({
+            password: newPassword.value
           });
 
-          // Check if response is JSON or HTML
-          const contentType = response.headers.get('content-type');
-          
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            
-            if (!response.ok) {
-              throw new Error(data.message || 'Verification failed');
-            }
+          if (error) {
+            throw error;
+          }
 
-            // Success - show success state
-            showEmailSuccess(data.email);
-          } else {
-            // Handle HTML response (from backend)
-            const htmlText = await response.text();
-            
-            // Try to extract email from HTML response
-            const emailMatch = htmlText.match(/<b>(.+?)<\/b>/);
-            const extractedEmail = emailMatch ? emailMatch[1] : null;
-            
-            if (response.ok) {
-              showEmailSuccess(extractedEmail);
-            } else {
-              throw new Error('Verification failed');
+          // OPTIONAL: Sync with local database (if you need to update your users table)
+          const email = document.getElementById('email').value;
+          if (email) {
+            try {
+              await fetch(`${API_BASE_URL}/api/auth/sync-password`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  email: email,
+                  new_password: newPassword.value
+                })
+              });
+            } catch (syncError) {
+              console.log('Local DB sync skipped - non-critical', syncError);
+              // Don't block success for this
             }
           }
 
+          // Success - show success state
+          showResetSuccess();
+
         } catch (error) {
-          console.error('Verification error:', error);
-          showError('Verification Failed', error.message || 'We couldn\'t verify your email address.');
+          console.error('Password reset error:', error);
+          showAlert(error.message || 'Failed to reset password. The link may have expired.', 'error');
+          setLoading(false);
         }
-      }
+      });
+    }
 
-      // For password reset flow, we don't need to verify the token first
-      // We can just show the reset form since the token comes from Supabase
-      function handlePasswordReset(token, email) {
-        // Just show the reset form - the token is from Supabase and should be valid
-        showResetForm(token, email);
-      }
-
-      // Main logic
-      showLoading();
+    function setLoading(isLoading) {
+      const btnText = resetBtn.querySelector('.btn-text');
+      const spinner = resetBtn.querySelector('.spinner');
       
-      const urlData = getDataFromHash();
-      
-      if (urlData && urlData.access_token) {
-        // Check if this is a password reset (recovery) or email verification
-        if (urlData.type === 'recovery') {
-          // Password reset flow - just show the form
-          handlePasswordReset(urlData.access_token, urlData.email);
-        } else {
-          // Email verification flow - verify with backend
-          verifyEmail(urlData.access_token);
-        }
+      resetBtn.disabled = isLoading;
+      if (isLoading) {
+        btnText.style.display = 'none';
+        spinner.style.display = 'inline-block';
       } else {
-        // No token found
-        showError('Invalid Link', 'No verification token found. The link may be invalid.', `Hash: ${window.location.hash || 'empty'}\nFull URL: ${window.location.href}`);
+        btnText.style.display = 'inline';
+        spinner.style.display = 'none';
       }
+    }
 
-      // Also check if there's an error parameter in URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const errorParam = urlParams.get('error');
-      const errorDescription = urlParams.get('error_description');
-      
-      if (errorParam || errorDescription) {
-        showError('Error', errorDescription || 'An error occurred. Please try again.', errorParam ? `Error: ${errorParam}` : null);
+    function showAlert(message, type) {
+      alertMessage.textContent = message;
+      alertMessage.className = `alert alert-${type} show`;
+    }
+
+    function hideAlert() {
+      alertMessage.classList.remove('show');
+    }
+
+    // Verify email with token using your backend
+    async function verifyEmail(token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.message || 'Verification failed');
+          }
+
+          showEmailSuccess(data.email);
+        } else {
+          const htmlText = await response.text();
+          const emailMatch = htmlText.match(/<b>(.+?)<\/b>/);
+          const extractedEmail = emailMatch ? emailMatch[1] : null;
+          
+          if (response.ok) {
+            showEmailSuccess(extractedEmail);
+          } else {
+            throw new Error('Verification failed');
+          }
+        }
+
+      } catch (error) {
+        console.error('Verification error:', error);
+        showError('Verification Failed', error.message || 'We couldn\'t verify your email address.');
       }
-    });
-  </script>
+    }
+
+    // MAIN LOGIC - Extract data from URL hash
+    showLoading();
+    
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    const type = params.get('type');
+    const email = params.get('email');
+    
+    console.log('URL Data:', { type, email, hasToken: !!access_token });
+
+    if (access_token) {
+      try {
+        // Set the session in Supabase client - THIS IS CRITICAL
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token: refresh_token || ''
+        });
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          throw sessionError;
+        }
+        
+        console.log('Session set successfully');
+        
+        // Now handle based on type
+        if (type === 'recovery' || type === 'reset') {
+          // Password reset flow - show form
+          showResetForm(email);
+        } else {
+          // Email verification flow - call backend
+          verifyEmail(access_token);
+        }
+      } catch (error) {
+        console.error('Session setup error:', error);
+        showError('Invalid Link', 'The reset link is invalid or has expired. Please request a new one.', error.message);
+      }
+    } else {
+      // No token found
+      showError('Invalid Link', 'No verification token found. The link may be invalid.', `Hash: ${window.location.hash || 'empty'}\nFull URL: ${window.location.href}`);
+    }
+
+    // Check for error parameters in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+    
+    if (errorParam || errorDescription) {
+      showError('Error', errorDescription || 'An error occurred. Please try again.', errorParam ? `Error: ${errorParam}` : null);
+    }
+  });
+</script>
 </body>
 </html>
