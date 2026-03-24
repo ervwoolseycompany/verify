@@ -1039,7 +1039,7 @@
       alertMessage.classList.remove('show');
     }
 
-    // ✅ FIX 3: Verify email — simplified to expect JSON only (backend now returns JSON)
+    // ✅ FIX: Verify email — simplified to expect JSON only (backend now returns JSON)
     async function verifyEmail(token) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
@@ -1063,10 +1063,10 @@
       }
     }
 
-    // MAIN LOGIC - Extract data from URL hash AND query params
+    // ✅ FIX: MAIN LOGIC - Extract data from URL hash AND query params
     showLoading();
     
-    // ✅ FIX 4: Read tokens from both hash (#) and query (?) — Supabase uses either
+    // Read tokens from both hash (#) and query (?) — Supabase uses either
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
 
@@ -1079,25 +1079,33 @@
 
     if (access_token) {
       try {
-        // Set the session in Supabase client - THIS IS CRITICAL
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token: refresh_token || ''
-        });
-        
-        if (sessionError) {
-          console.error('Session error:', sessionError);
-          throw sessionError;
+        // ✅ CRITICAL FIX: Set the session in Supabase client for password reset
+        if (refresh_token) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: access_token,
+            refresh_token: refresh_token
+          });
+          
+          if (sessionError) {
+            console.error('Session error:', sessionError);
+            throw sessionError;
+          }
+          
+          console.log('Session set successfully');
+        } else {
+          // For email verification, we might not need the session
+          console.log('No refresh token provided, skipping session setup');
         }
-        
-        console.log('Session set successfully');
         
         // Now handle based on type
         if (type === 'recovery' || type === 'reset') {
           // Password reset flow - show form
           showResetForm(email);
-        } else {
+        } else if (type === 'email_verification' || type === 'signup') {
           // Email verification flow - call backend
+          verifyEmail(access_token);
+        } else {
+          // Default to email verification if type is not specified
           verifyEmail(access_token);
         }
       } catch (error) {
