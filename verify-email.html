@@ -1039,7 +1039,7 @@
       alertMessage.classList.remove('show');
     }
 
-    // Verify email with token using your backend
+    // ✅ FIXED: Simplified verify email function
     async function verifyEmail(token) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
@@ -1049,27 +1049,13 @@
           }
         });
 
-        const contentType = response.headers.get('content-type');
-        
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(data.message || 'Verification failed');
-          }
+        const data = await response.json();
 
-          showEmailSuccess(data.email);
-        } else {
-          const htmlText = await response.text();
-          const emailMatch = htmlText.match(/<b>(.+?)<\/b>/);
-          const extractedEmail = emailMatch ? emailMatch[1] : null;
-          
-          if (response.ok) {
-            showEmailSuccess(extractedEmail);
-          } else {
-            throw new Error('Verification failed');
-          }
+        if (!response.ok) {
+          throw new Error(data.message || 'Verification failed');
         }
+
+        showEmailSuccess(data.email);
 
       } catch (error) {
         console.error('Verification error:', error);
@@ -1077,16 +1063,17 @@
       }
     }
 
-    // MAIN LOGIC - Extract data from URL hash
+    // ✅ FIXED: MAIN LOGIC - Extract data from both hash and query parameters
     showLoading();
     
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
+    // Get tokens from both hash and query parameters
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const queryParams = new URLSearchParams(window.location.search);
     
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
-    const type = params.get('type');
-    const email = params.get('email');
+    const access_token = hashParams.get('access_token') || queryParams.get('access_token');
+    const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
+    const type = hashParams.get('type') || queryParams.get('type');
+    const email = hashParams.get('email') || queryParams.get('email');
     
     console.log('URL Data:', { type, email, hasToken: !!access_token });
 
@@ -1123,9 +1110,8 @@
     }
 
     // Check for error parameters in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const errorParam = urlParams.get('error');
-    const errorDescription = urlParams.get('error_description');
+    const errorParam = queryParams.get('error');
+    const errorDescription = queryParams.get('error_description');
     
     if (errorParam || errorDescription) {
       showError('Error', errorDescription || 'An error occurred. Please try again.', errorParam ? `Error: ${errorParam}` : null);
