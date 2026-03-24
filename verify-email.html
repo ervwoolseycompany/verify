@@ -1039,7 +1039,7 @@
       alertMessage.classList.remove('show');
     }
 
-    // ✅ FIXED: Simplified verify email function
+    // ✅ FIX 3: Verify email — simplified to expect JSON only (backend now returns JSON)
     async function verifyEmail(token) {
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/verify-email?access_token=${encodeURIComponent(token)}`, {
@@ -1063,13 +1063,13 @@
       }
     }
 
-    // ✅ FIXED: MAIN LOGIC - Extract data from both hash and query parameters
+    // MAIN LOGIC - Extract data from URL hash AND query params
     showLoading();
     
-    // Get tokens from both hash and query parameters
+    // ✅ FIX 4: Read tokens from both hash (#) and query (?) — Supabase uses either
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const queryParams = new URLSearchParams(window.location.search);
-    
+
     const access_token = hashParams.get('access_token') || queryParams.get('access_token');
     const refresh_token = hashParams.get('refresh_token') || queryParams.get('refresh_token');
     const type = hashParams.get('type') || queryParams.get('type');
@@ -1110,8 +1110,9 @@
     }
 
     // Check for error parameters in URL
-    const errorParam = queryParams.get('error');
-    const errorDescription = queryParams.get('error_description');
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
     
     if (errorParam || errorDescription) {
       showError('Error', errorDescription || 'An error occurred. Please try again.', errorParam ? `Error: ${errorParam}` : null);
